@@ -2,9 +2,13 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-#include <serialport.h>
-#include <serialsettingdialog.h>
-#include <serialsenddialog.h>
+#include <QTableWidget>
+#include <QDateTime>
+
+#include "serialport.h"
+#include "serialsettingdialog.h"
+#include "serialsenddialog.h"
+#include "modbus.h"
 
 namespace Ui {
 class MainWindow;
@@ -19,15 +23,13 @@ public:
     ~MainWindow();
 
 public slots:
-    void serialRead(void);
+    void modbusStateChangeHandle(QModbusDevice::State state);
+    void modbusSendFinishedHandle(void);
 
 private slots:
     void on_actionOpen_triggered();
-
     void on_actionClose_triggered();
-
     void on_actionSetting_triggered();
-
     void on_actionSend_triggered();
 
 private:
@@ -35,7 +37,13 @@ private:
     SerialPort* modbusSerial;
     SerialSettingDialog* serialDialog;
     SerialSendDialog* serialSendDialog;
+    Modbus* modbus;
 
+    QModbusReply* reply;
+
+    QTime timesample;
+
+    void updateTable(QTableWidget* table, QString from);
 };
 
 #endif // MAINWINDOW_H

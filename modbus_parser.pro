@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += core gui serialport
+QT       += core gui serialbus serialport
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -16,12 +16,14 @@ SOURCES += main.cpp\
         mainwindow.cpp \
     serialport.cpp \
     serialsettingdialog.cpp \
-    serialsenddialog.cpp
+    serialsenddialog.cpp \
+    modbus.cpp
 
 HEADERS  += mainwindow.h \
     serialport.h \
     serialsettingdialog.h \
-    serialsenddialog.h
+    serialsenddialog.h \
+    modbus.h
 
 FORMS    += mainwindow.ui \
     serialsettingdialog.ui \

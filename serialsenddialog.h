@@ -2,6 +2,8 @@
 #define SERIALSENDDIALOG_H
 
 #include <QDialog>
+#include <QModbusRequest>
+#include <QString>
 
 namespace Ui {
 class SerialSendDialog;
@@ -17,6 +19,11 @@ public:
 
     bool hexstatus(void);
     QString writedata(void);
+
+    quint16 data(void);
+    quint16 slaveAddress(void);
+    quint16 registerAddress(void);
+    QModbusRequest::FunctionCode functionCode(void);
 
 private slots:
 
