@@ -133,7 +133,7 @@ void MainWindow::modbusSendFinishedHandle(void)
                 {
                     if( i == 0)
                     {
-                        itemText =  tr("Return Data Length(Byte): %1 Data:")
+                        itemText =  tr("Return Data Length(Byte): %1, Data:")
                            .arg(QString().number(reply->rawResult().data()[0]));
                     }
                     else
@@ -155,7 +155,28 @@ void MainWindow::modbusSendFinishedHandle(void)
         }
         else if(serialSendDialog->functionCode() == 0x06)
         {
+            itemText = "Write Single Register (0x06) ";
+            table->setItem(rowCount-1, 3, new QTableWidgetItem(itemText));
 
+            if( reply->rawResult().isValid())
+            {
+                    res = reply->rawResult().data()[0];
+                    res <<= 8;
+                    res |= reply->rawResult().data()[1];
+                    itemText =  tr("Register Address: 0x%1, Write Data:")
+                                .arg(QString().number(res, 16).toUpper());
+
+                    res = reply->rawResult().data()[2];
+                    res <<= 8;
+                    res |= reply->rawResult().data()[3];
+                    itemText.append(tr(" 0x%1").arg(QString().number(res, 16).toUpper()));
+            }
+            else
+            {
+                itemText = "Data is Invalid";
+            }
+
+            table->setItem(rowCount-1, 4, new QTableWidgetItem(itemText));
         }
     }
     else
@@ -200,6 +221,13 @@ void MainWindow::updateTable(QTableWidget* table, QString from)
     }
     else if(serialSendDialog->functionCode() == 0x06)
     {
+        itemText = "Write Single Register (0x06) ";
+        table->setItem(rowCount-1, 3, new QTableWidgetItem(itemText));
 
+        itemText = tr("Register Address: 0x%1, Write Data: 0x%2")
+                .arg(QString().number(serialSendDialog->registerAddress(), 16).toUpper())
+                .arg(QString().number(serialSendDialog->data(), 16).toUpper());
+
+        table->setItem(rowCount-1, 4, new QTableWidgetItem(itemText));
     }
 }
