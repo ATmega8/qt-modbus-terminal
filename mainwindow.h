@@ -5,7 +5,6 @@
 #include <QTableWidget>
 #include <QDateTime>
 
-#include "serialport.h"
 #include "serialsettingdialog.h"
 #include "serialsenddialog.h"
 #include "modbus.h"
@@ -34,7 +33,6 @@ private slots:
 
 private:
     Ui::MainWindow *ui;
-    SerialPort* modbusSerial;
     SerialSettingDialog* serialDialog;
     SerialSendDialog* serialSendDialog;
     Modbus* modbus;
