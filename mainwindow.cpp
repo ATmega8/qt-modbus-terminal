@@ -13,6 +13,8 @@ MainWindow::MainWindow(QWidget *parent) :
     serialDialog = new SerialSettingDialog();
     serialSendDialog = new SerialSendDialog();
 
+    msgBox = new QMessageBox();
+
    timesample.start();
 
     connect(modbus, SIGNAL(stateChanged(QModbusDevice::State)),
@@ -21,6 +23,10 @@ MainWindow::MainWindow(QWidget *parent) :
 
 MainWindow::~MainWindow()
 {
+    if(modbus->state() == QModbusDevice::ConnectedState)
+        modbus->disconnectDevice();
+
+    delete msgBox;
     delete modbus;
     delete serialDialog;
     delete serialSendDialog;
@@ -60,16 +66,24 @@ void MainWindow::on_actionSend_triggered()
 {
     if(serialSendDialog->exec() == 1)
     {
-        QModbusRequest request(serialSendDialog->functionCode(),
-                            serialSendDialog->registerAddress(),
-                            serialSendDialog->data());
+        if(modbus->state() == QModbusDevice::ConnectedState)
+        {
+            QModbusRequest request(serialSendDialog->functionCode(),
+                                serialSendDialog->registerAddress(),
+                                serialSendDialog->data());
 
-        reply = modbus->sendRawRequest(request, serialSendDialog->slaveAddress());
-        ui->statusBar->showMessage("Start send data");
-        connect(reply, SIGNAL(finished()), this, SLOT(modbusSendFinishedHandle()));
+            reply = modbus->sendRawRequest(request, serialSendDialog->slaveAddress());
+            ui->statusBar->showMessage("Start send data");
+            connect(reply, SIGNAL(finished()), this, SLOT(modbusSendFinishedHandle()));
 
-        /*等待完成*/
-        updateTable(ui->tableWidget, "Master");
+            /*等待完成*/
+            updateTable(ui->tableWidget, "Master");
+        }
+        else
+        {
+            msgBox->setText("Serial NOT Open");
+            msgBox->exec();
+        }
     }
 }
 

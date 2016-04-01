@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include <QTableWidget>
 #include <QDateTime>
+#include <QMessageBox>
 
 #include "serialsettingdialog.h"
 #include "serialsenddialog.h"
@@ -36,6 +37,8 @@ private:
     SerialSettingDialog* serialDialog;
     SerialSendDialog* serialSendDialog;
     Modbus* modbus;
+
+    QMessageBox* msgBox;
 
     QModbusReply* reply;
 
