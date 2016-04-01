@@ -52,25 +52,25 @@ void MainWindow::on_actionClose_triggered()
 
 void MainWindow::on_actionSetting_triggered()
 {
-    serialDialog->exec();
-    modbus->setting(serialDialog);
+    if(serialDialog->exec() == 1)
+        modbus->setting(serialDialog);
 }
 
 void MainWindow::on_actionSend_triggered()
 {
-    serialSendDialog->exec();
+    if(serialSendDialog->exec() == 1)
+    {
+        QModbusRequest request(serialSendDialog->functionCode(),
+                            serialSendDialog->registerAddress(),
+                            serialSendDialog->data());
 
-    QModbusRequest request(serialSendDialog->functionCode(),
-                           serialSendDialog->registerAddress(),
-                           serialSendDialog->data());
+        reply = modbus->sendRawRequest(request, serialSendDialog->slaveAddress());
+        ui->statusBar->showMessage("Start send data");
+        connect(reply, SIGNAL(finished()), this, SLOT(modbusSendFinishedHandle()));
 
-    reply = modbus->sendRawRequest(request, serialSendDialog->slaveAddress());
-    ui->statusBar->showMessage("Start send data");
-    connect(reply, SIGNAL(finished()), this, SLOT(modbusSendFinishedHandle()));
-
-    /*等待完成*/
-    updateTable(ui->tableWidget, "Master");
-
+        /*等待完成*/
+        updateTable(ui->tableWidget, "Master");
+    }
 }
 
 void MainWindow::modbusStateChangeHandle(QModbusDevice::State state)
