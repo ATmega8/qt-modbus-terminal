@@ -26,3 +26,6 @@ HEADERS  += mainwindow.h \
 FORMS    += mainwindow.ui \
     serialsettingdialog.ui \
     serialsenddialog.ui
+
+RESOURCES += \
+    resource.qrc
