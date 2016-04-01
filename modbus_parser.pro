@@ -14,13 +14,11 @@ TEMPLATE = app
 
 SOURCES += main.cpp\
         mainwindow.cpp \
-    serialport.cpp \
     serialsettingdialog.cpp \
     serialsenddialog.cpp \
     modbus.cpp
 
 HEADERS  += mainwindow.h \
-    serialport.h \
     serialsettingdialog.h \
     serialsenddialog.h \
     modbus.h
