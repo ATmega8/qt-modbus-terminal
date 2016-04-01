@@ -101,9 +101,8 @@
   <widget class="QStatusBar" name="statusBar"/>
   <action name="actionOpen">
    <property name="icon">
-    <iconset>
-     <normalon>../../../../../../usr/share/icons/gnome/24x24/actions/fileopen.png</normalon>
-    </iconset>
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/fileopen.png</normaloff>:/resource/fileopen.png</iconset>
    </property>
    <property name="text">
     <string>Open</string>
@@ -117,8 +116,8 @@
   </action>
   <action name="actionClose">
    <property name="icon">
-    <iconset>
-     <normaloff>../../../../../../usr/share/icons/gnome/24x24/actions/gtk-close.png</normaloff>../../../../../../usr/share/icons/gnome/24x24/actions/gtk-close.png</iconset>
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/stock_stop.png</normaloff>:/resource/stock_stop.png</iconset>
    </property>
    <property name="text">
     <string>Close</string>
@@ -132,8 +131,8 @@
   </action>
   <action name="actionSend">
    <property name="icon">
-    <iconset>
-     <normaloff>../../../../../../usr/share/icons/gnome/24x24/actions/mail-send.png</normaloff>../../../../../../usr/share/icons/gnome/24x24/actions/mail-send.png</iconset>
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/mail-reply-all.png</normaloff>:/resource/mail-reply-all.png</iconset>
    </property>
    <property name="text">
     <string>Send</string>
@@ -147,8 +146,8 @@
   </action>
   <action name="actionSetting">
    <property name="icon">
-    <iconset>
-     <normaloff>../../../../../../usr/share/icons/gnome/24x24/actions/document-properties.png</normaloff>../../../../../../usr/share/icons/gnome/24x24/actions/document-properties.png</iconset>
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/document-properties.png</normaloff>:/resource/document-properties.png</iconset>
    </property>
    <property name="text">
     <string>Setting</string>
@@ -159,6 +158,8 @@
   </action>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
- <resources/>
+ <resources>
+  <include location="resource.qrc"/>
+ </resources>
  <connections/>
 </ui>
