@@ -29,3 +29,6 @@ FORMS    += mainwindow.ui \
 
 RESOURCES += \
     resource.qrc
+
+DISTFILES += \
+    README.md
