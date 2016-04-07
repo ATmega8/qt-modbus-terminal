@@ -176,13 +176,13 @@ void MainWindow::modbusSendFinishedHandle(void)
             {
                     res = reply->rawResult().data()[0];
                     res <<= 8;
-                    res |= reply->rawResult().data()[1];
+                    res |= (0x00FF & reply->rawResult().data()[1]);
                     itemText =  tr("Register Address: 0x%1, Write Data:")
                                 .arg(QString().number(res, 16).toUpper());
 
                     res = reply->rawResult().data()[2];
                     res <<= 8;
-                    res |= reply->rawResult().data()[3];
+                    res |= (0x00FF & reply->rawResult().data()[3]);
                     itemText.append(tr(" 0x%1").arg(QString().number(res, 16).toUpper()));
             }
             else
