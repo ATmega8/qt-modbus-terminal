@@ -154,7 +154,7 @@ void MainWindow::modbusSendFinishedHandle(void)
                     {
                         res = reply->rawResult().data()[2*i-1];
                         res <<= 8;
-                        res |= reply->rawResult().data()[2*i];
+                        res |= (0x00FF & reply->rawResult().data()[2*i]);
                         itemText.append(tr(" 0x%1").arg(QString().number(res, 16).toUpper()));
 
                     }
