@@ -5,6 +5,7 @@
 #-------------------------------------------------
 
 QT       += core gui serialbus serialport
+CONFIG   += qwt
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -31,4 +32,5 @@ RESOURCES += \
     resource.qrc
 
 DISTFILES += \
-    README.md
+    README.md \
+    ../../../../../../usr/share/qtmk

@@ -1,10 +1,14 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
+#include <qwt_plot.h>
+#include <qwt_plot_grid.h>
+
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
+
     ui->setupUi(this);
 
     ui->tableWidget->setColumnCount(5);
@@ -15,7 +19,28 @@ MainWindow::MainWindow(QWidget *parent) :
 
     msgBox = new QMessageBox();
 
-   timesample.start();
+    //Qwt Plot Widget Init
+    //Axis
+    ui->qwtPlot->setAxisMaxMajor(QwtPlot::xBottom, 5);
+    ui->qwtPlot->setAxisMaxMinor(QwtPlot::xBottom, 9);
+    ui->qwtPlot->setAxisMaxMajor(QwtPlot::yRight, 5);
+    ui->qwtPlot->setAxisMaxMinor(QwtPlot::yRight, 9);
+
+    ui->qwtPlot->setAxisTitle(QwtPlot::xBottom, "Time");
+    ui->qwtPlot->setAxisTitle(QwtPlot::yLeft, "Attitude");
+
+    //Grid
+    QwtPlotGrid* plotGrid = new QwtPlotGrid;
+
+    plotGrid->enableXMin(true);
+    plotGrid->setMajorPen(Qt::black, 0, Qt::DotLine);
+    plotGrid->setMinorPen(Qt::gray, 0, Qt::DotLine);
+    plotGrid->attach(ui->qwtPlot);
+
+    //background
+    ui->qwtPlot->setCanvasBackground(QColor("white"));
+
+    timesample.start();
 
     connect(modbus, SIGNAL(stateChanged(QModbusDevice::State)),
             this, SLOT(modbusStateChangeHandle(QModbusDevice::State)));

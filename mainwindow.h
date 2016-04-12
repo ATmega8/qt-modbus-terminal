@@ -5,6 +5,7 @@
 #include <QTableWidget>
 #include <QDateTime>
 #include <QMessageBox>
+#include <QThread>
 
 #include "serialsettingdialog.h"
 #include "serialsenddialog.h"

@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>679</width>
-    <height>269</height>
+    <height>627</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -67,6 +67,9 @@
        </property>
       </column>
      </widget>
+    </item>
+    <item>
+     <widget class="QwtPlot" name="qwtPlot"/>
     </item>
    </layout>
   </widget>
@@ -158,6 +161,13 @@
   </action>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
+ <customwidgets>
+  <customwidget>
+   <class>QwtPlot</class>
+   <extends>QFrame</extends>
+   <header>qwt_plot.h</header>
+  </customwidget>
+ </customwidgets>
  <resources>
   <include location="resource.qrc"/>
  </resources>
