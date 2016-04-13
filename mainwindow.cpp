@@ -64,17 +64,44 @@ void MainWindow::on_actionSetting_triggered()
 
 void MainWindow::on_actionSend_triggered()
 {
+    QModbusReply* reply;
+
     if(serialSendDialog->exec() == 1)
     {
         if(modbus->state() == QModbusDevice::ConnectedState)
         {
-            QModbusRequest request(serialSendDialog->functionCode(),
-                                serialSendDialog->registerAddress(),
-                                serialSendDialog->data());
 
-            reply = modbus->sendRawRequest(request, serialSendDialog->slaveAddress());
-            ui->statusBar->showMessage("Start send data");
-            connect(reply, SIGNAL(finished()), this, SLOT(modbusSendFinishedHandle()));
+
+            ui->statusBar->showMessage("Start send request");
+
+            QModbusDataUnit unit =
+                    QModbusDataUnit(QModbusDataUnit::HoldingRegisters,
+                                    serialSendDialog->registerAddress(),
+                                    serialSendDialog->data());
+
+            if(serialSendDialog->functionCode() == 0x03)
+            {
+                reply = modbus->sendReadRequest(unit,
+                                serialSendDialog->slaveAddress());
+            }
+            else if(serialSendDialog->functionCode() == 0x06)
+            {
+                QModbusRequest request(QModbusRequest::WriteSingleRegister,
+                                    serialSendDialog->registerAddress(),
+                                    serialSendDialog->data());
+
+                reply = modbus->sendRawRequest(request, serialSendDialog->slaveAddress());
+            }
+
+            //等待回复
+            if(!reply->isFinished())
+            {
+                    connect(reply, &QModbusReply::finished, this, &MainWindow::modbusSendFinishedHandle);
+            }
+            else //广播情况下无回复
+            {
+                    delete reply;
+            }
 
             /*等待完成*/
             updateTable(ui->tableWidget, "Master");
@@ -112,10 +139,12 @@ void MainWindow::modbusSendFinishedHandle(void)
 {
     int rowCount;
     QString itemText;
-    int i;
+    uint i;
     uint16_t res;
 
     QTableWidget* table = ui->tableWidget;
+
+    QModbusReply* reply = qobject_cast<QModbusReply*>(sender());
 
     rowCount = table->rowCount();
 
@@ -141,22 +170,20 @@ void MainWindow::modbusSendFinishedHandle(void)
             itemText = "Read Holding Register (0x03) ";
             table->setItem(rowCount-1, 3, new QTableWidgetItem(itemText));
 
-            if( reply->rawResult().isValid())
+            const QModbusDataUnit unit = reply->result();
+
+            if(unit.isValid())
             {
-                for( i = 0; i < (reply->rawResult().dataSize() - 1)/2 + 1; i++)
+                for( i = 0; i < unit.valueCount() + 1; i++)
                 {
                     if( i == 0)
                     {
-                        itemText =  tr("Return Data Length(Byte): %1, Data:")
-                           .arg(QString().number(reply->rawResult().data()[0]));
+                        itemText =  tr("Return Data Length(Half Word): %1, Data:")
+                           .arg(QString().number(unit.valueCount()));
                     }
                     else
                     {
-                        res = reply->rawResult().data()[2*i-1];
-                        res <<= 8;
-                        res |= (0x00FF & reply->rawResult().data()[2*i]);
-                        itemText.append(tr(" 0x%1").arg(QString().number(res, 16).toUpper()));
-
+                        itemText.append(tr(" 0x%1").arg(QString().number(unit.value(i-1), 16).toUpper()));
                     }
                 }
             }
@@ -202,6 +229,8 @@ void MainWindow::modbusSendFinishedHandle(void)
         table->setItem(rowCount-1, 4, newItem);
         ui->statusBar->showMessage(tr("Finished, %1").arg(reply->errorString()));
     }
+
+    reply->deleteLater();
 }
 void MainWindow::updateTable(QTableWidget* table, QString from)
 {

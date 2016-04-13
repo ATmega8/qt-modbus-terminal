@@ -40,8 +40,6 @@ private:
 
     QMessageBox* msgBox;
 
-    QModbusReply* reply;
-
     QTime timesample;
 
     void updateTable(QTableWidget* table, QString from);
