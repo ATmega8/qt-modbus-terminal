@@ -19,6 +19,12 @@ MainWindow::MainWindow(QWidget *parent) :
 
     msgBox = new QMessageBox();
 
+    plotTimer = new QTimer(this);
+    connect(plotTimer, SIGNAL(timeout()), this, SLOT(updateCaption()));
+    plotTimer->start(1000);
+
+    plotCount  = 0.0;
+
     //Qwt Plot Widget Init
     //Axis
     ui->qwtPlot->setAxisMaxMajor(QwtPlot::xBottom, 5);
@@ -37,13 +43,34 @@ MainWindow::MainWindow(QWidget *parent) :
     plotGrid->setMinorPen(Qt::gray, 0, Qt::DotLine);
     plotGrid->attach(ui->qwtPlot);
 
+    //Curve
+    d_curve1 = new QwtPlotCurve( "Attitude" );
+    d_curve1->setRenderHint( QwtPlotItem::RenderAntialiased );
+    d_curve1->setPen( Qt::red);
+    d_curve1->setLegendAttribute( QwtPlotCurve::LegendShowLine );
+    d_curve1->setYAxis( QwtPlot::yLeft );
+    d_curve1->attach(ui->qwtPlot);
+
+    //Marker
+    d_marker1 = new QwtPlotMarker();
+    d_marker1->setValue( 0.0, 0.0 );
+    d_marker1->setLineStyle( QwtPlotMarker::VLine );
+    d_marker1->setLabelAlignment( Qt::AlignRight | Qt::AlignBottom );
+    d_marker1->setLinePen( Qt::green, 0, Qt::DashDotLine );
+    d_marker1->attach(ui->qwtPlot);
+
     //background
     ui->qwtPlot->setCanvasBackground(QColor("white"));
+
+    ui->qwtPlot->setAutoReplot(true);
 
     timesample.start();
 
     connect(modbus, SIGNAL(stateChanged(QModbusDevice::State)),
             this, SLOT(modbusStateChangeHandle(QModbusDevice::State)));
+
+    connect(modbus,SIGNAL(finished()),
+            this, SLOT(modbusSendFinishedHandle()));
 }
 
 MainWindow::~MainWindow()
@@ -91,23 +118,14 @@ void MainWindow::on_actionSend_triggered()
 {
     if(serialSendDialog->exec() == 1)
     {
-        if(modbus->state() == QModbusDevice::ConnectedState)
+        if(modbus->sendRequest(serialSendDialog) == true)
         {
-            QModbusRequest request(serialSendDialog->functionCode(),
-                                serialSendDialog->registerAddress(),
-                                serialSendDialog->data());
-
-            reply = modbus->sendRawRequest(request, serialSendDialog->slaveAddress());
-            ui->statusBar->showMessage("Start send data");
-            connect(reply, SIGNAL(finished()), this, SLOT(modbusSendFinishedHandle()));
-
-            /*等待完成*/
+            ui->statusBar->showMessage("Send data ok");
             updateTable(ui->tableWidget, "Master");
         }
         else
         {
-            msgBox->setText("Serial NOT Open");
-            msgBox->exec();
+            ui->statusBar->showMessage("Send data fault");
         }
     }
 }
@@ -137,8 +155,7 @@ void MainWindow::modbusSendFinishedHandle(void)
 {
     int rowCount;
     QString itemText;
-    int i;
-    uint16_t res;
+    uint i;
 
     QTableWidget* table = ui->tableWidget;
 
@@ -149,85 +166,62 @@ void MainWindow::modbusSendFinishedHandle(void)
     table->setRowCount(rowCount);
 
     itemText = QString().number(timesample.elapsed());
+
     table->setItem(rowCount-1, 0, new QTableWidgetItem(itemText));
 
-    if( reply->error() == QModbusDevice::NoError )
+    if(modbus->replyErrorString().isEmpty())
     {
 
-        itemText = QString().number(reply->serverAddress());
+        ui->statusBar->showMessage(tr("Finished, OK"));
+
+        itemText = QString().number(modbus->readRegister->slaveAddress());
+
         table->setItem(rowCount-1, 1, new QTableWidgetItem(itemText));
 
         table->setItem(rowCount-1, 2, new QTableWidgetItem(QString("Master")));
 
-        ui->statusBar->showMessage(tr("Finished, OK"));
-
-        if(serialSendDialog->functionCode() == 0x03)
+        if(modbus->functionCode() == QModbusPdu::ReadHoldingRegisters)
         {
             itemText = "Read Holding Register (0x03) ";
             table->setItem(rowCount-1, 3, new QTableWidgetItem(itemText));
 
-            if( reply->rawResult().isValid())
-            {
-                for( i = 0; i < (reply->rawResult().dataSize() - 1)/2 + 1; i++)
-                {
-                    if( i == 0)
-                    {
-                        itemText =  tr("Return Data Length(Byte): %1, Data:")
-                           .arg(QString().number(reply->rawResult().data()[0]));
-                    }
-                    else
-                    {
-                        res = reply->rawResult().data()[2*i-1];
-                        res <<= 8;
-                        res |= (0x00FF & reply->rawResult().data()[2*i]);
-                        itemText.append(tr(" 0x%1").arg(QString().number(res, 16).toUpper()));
+             itemText =  tr("Return Data Length(Half Word): %1, Data:")
+                .arg(QString().number(modbus->readRegister->valueCount()));
 
-                    }
-                }
-            }
-            else
+            for( i = 0; i < modbus->readRegister->valueCount(); i++)
             {
-                itemText = "Data is Invalid";
+                itemText.append(tr(" 0x%1")
+                                .arg(QString()
+                                     .number(modbus->readRegister->value(i), 16).toUpper()));
             }
 
             table->setItem(rowCount-1, 4, new QTableWidgetItem(itemText));
         }
-        else if(serialSendDialog->functionCode() == 0x06)
+        else if(modbus->functionCode() == QModbusPdu::WriteSingleRegister)
         {
             itemText = "Write Single Register (0x06) ";
             table->setItem(rowCount-1, 3, new QTableWidgetItem(itemText));
 
-            if( reply->rawResult().isValid())
-            {
-                    res = reply->rawResult().data()[0];
-                    res <<= 8;
-                    res |= (0x00FF & reply->rawResult().data()[1]);
-                    itemText =  tr("Register Address: 0x%1, Write Data:")
-                                .arg(QString().number(res, 16).toUpper());
+            itemText =  tr("Register Address: 0x%1, Write Data:")
+                                .arg(QString().number(modbus->writeRegister->startAddress(), 16).toUpper());
 
-                    res = reply->rawResult().data()[2];
-                    res <<= 8;
-                    res |= (0x00FF & reply->rawResult().data()[3]);
-                    itemText.append(tr(" 0x%1").arg(QString().number(res, 16).toUpper()));
-            }
-            else
-            {
-                itemText = "Data is Invalid";
-            }
+            itemText.append(tr(" 0x%1").arg(QString()
+                                            .number(modbus->writeRegister->value(), 16).toUpper()));
 
             table->setItem(rowCount-1, 4, new QTableWidgetItem(itemText));
         }
     }
     else
     {
-        itemText = reply->errorString();
+        itemText = modbus->replyErrorString();
         QTableWidgetItem* newItem = new QTableWidgetItem(itemText);
         newItem->setTextColor(Qt::red);
 
         table->setItem(rowCount-1, 4, newItem);
-        ui->statusBar->showMessage(tr("Finished, %1").arg(reply->errorString()));
+        ui->statusBar->showMessage(tr("Finished, %1").arg(modbus->replyErrorString()));
     }
 }
+
 void MainWindow::updateTable(QTableWidget* table, QString from)
 {
     int rowCount;
@@ -269,4 +263,9 @@ void MainWindow::updateTable(QTableWidget* table, QString from)
 
         table->setItem(rowCount-1, 4, new QTableWidgetItem(itemText));
     }
+}
+
+void MainWindow::updateCaption(void)
+{
+
 }
