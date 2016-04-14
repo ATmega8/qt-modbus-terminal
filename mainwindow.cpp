@@ -1,10 +1,14 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
+#include <qwt_plot.h>
+#include <qwt_plot_grid.h>
+
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
+
     ui->setupUi(this);
 
     ui->tableWidget->setColumnCount(5);
@@ -15,10 +19,58 @@ MainWindow::MainWindow(QWidget *parent) :
 
     msgBox = new QMessageBox();
 
-   timesample.start();
+    plotTimer = new QTimer(this);
+    connect(plotTimer, SIGNAL(timeout()), this, SLOT(updateCaption()));
+    plotTimer->start(1000);
+
+    plotCount  = 0.0;
+
+    //Qwt Plot Widget Init
+    //Axis
+    ui->qwtPlot->setAxisMaxMajor(QwtPlot::xBottom, 5);
+    ui->qwtPlot->setAxisMaxMinor(QwtPlot::xBottom, 9);
+    ui->qwtPlot->setAxisMaxMajor(QwtPlot::yRight, 5);
+    ui->qwtPlot->setAxisMaxMinor(QwtPlot::yRight, 9);
+
+    ui->qwtPlot->setAxisTitle(QwtPlot::xBottom, "Time");
+    ui->qwtPlot->setAxisTitle(QwtPlot::yLeft, "Attitude");
+
+    //Grid
+    QwtPlotGrid* plotGrid = new QwtPlotGrid;
+
+    plotGrid->enableXMin(true);
+    plotGrid->setMajorPen(Qt::black, 0, Qt::DotLine);
+    plotGrid->setMinorPen(Qt::gray, 0, Qt::DotLine);
+    plotGrid->attach(ui->qwtPlot);
+
+    //Curve
+    d_curve1 = new QwtPlotCurve( "Attitude" );
+    d_curve1->setRenderHint( QwtPlotItem::RenderAntialiased );
+    d_curve1->setPen( Qt::red);
+    d_curve1->setLegendAttribute( QwtPlotCurve::LegendShowLine );
+    d_curve1->setYAxis( QwtPlot::yLeft );
+    d_curve1->attach(ui->qwtPlot);
+
+    //Marker
+    d_marker1 = new QwtPlotMarker();
+    d_marker1->setValue( 0.0, 0.0 );
+    d_marker1->setLineStyle( QwtPlotMarker::VLine );
+    d_marker1->setLabelAlignment( Qt::AlignRight | Qt::AlignBottom );
+    d_marker1->setLinePen( Qt::green, 0, Qt::DashDotLine );
+    d_marker1->attach(ui->qwtPlot);
+
+    //background
+    ui->qwtPlot->setCanvasBackground(QColor("white"));
+
+    ui->qwtPlot->setAutoReplot(true);
+
+    timesample.start();
 
     connect(modbus, SIGNAL(stateChanged(QModbusDevice::State)),
             this, SLOT(modbusStateChangeHandle(QModbusDevice::State)));
+
+    connect(modbus,SIGNAL(finished()),
+            this, SLOT(modbusSendFinishedHandle()));
 }
 
 MainWindow::~MainWindow()
@@ -64,52 +116,16 @@ void MainWindow::on_actionSetting_triggered()
 
 void MainWindow::on_actionSend_triggered()
 {
-    QModbusReply* reply;
-
     if(serialSendDialog->exec() == 1)
     {
-        if(modbus->state() == QModbusDevice::ConnectedState)
+        if(modbus->sendRequest(serialSendDialog) == true)
         {
-
-
-            ui->statusBar->showMessage("Start send request");
-
-            QModbusDataUnit unit =
-                    QModbusDataUnit(QModbusDataUnit::HoldingRegisters,
-                                    serialSendDialog->registerAddress(),
-                                    serialSendDialog->data());
-
-            if(serialSendDialog->functionCode() == 0x03)
-            {
-                reply = modbus->sendReadRequest(unit,
-                                serialSendDialog->slaveAddress());
-            }
-            else if(serialSendDialog->functionCode() == 0x06)
-            {
-                QModbusRequest request(QModbusRequest::WriteSingleRegister,
-                                    serialSendDialog->registerAddress(),
-                                    serialSendDialog->data());
-
-                reply = modbus->sendRawRequest(request, serialSendDialog->slaveAddress());
-            }
-
-            //等待回复
-            if(!reply->isFinished())
-            {
-                    connect(reply, &QModbusReply::finished, this, &MainWindow::modbusSendFinishedHandle);
-            }
-            else //广播情况下无回复
-            {
-                    delete reply;
-            }
-
-            /*等待完成*/
+            ui->statusBar->showMessage("Send data ok");
             updateTable(ui->tableWidget, "Master");
         }
         else
         {
-            msgBox->setText("Serial NOT Open");
-            msgBox->exec();
+            ui->statusBar->showMessage("Send data fault");
         }
     }
 }
@@ -140,7 +156,6 @@ void MainWindow::modbusSendFinishedHandle(void)
     int rowCount;
     QString itemText;
     uint i;
-    uint16_t res;
 
     QTableWidget* table = ui->tableWidget;
 
@@ -153,85 +168,64 @@ void MainWindow::modbusSendFinishedHandle(void)
     table->setRowCount(rowCount);
 
     itemText = QString().number(timesample.elapsed());
+
     table->setItem(rowCount-1, 0, new QTableWidgetItem(itemText));
 
-    if( reply->error() == QModbusDevice::NoError )
+    if(modbus->replyErrorString().isEmpty())
     {
 
-        itemText = QString().number(reply->serverAddress());
+        ui->statusBar->showMessage(tr("Finished, OK"));
+
+        itemText = QString().number(modbus->readRegister->slaveAddress());
+
         table->setItem(rowCount-1, 1, new QTableWidgetItem(itemText));
 
         table->setItem(rowCount-1, 2, new QTableWidgetItem(QString("Master")));
 
-        ui->statusBar->showMessage(tr("Finished, OK"));
-
-        if(serialSendDialog->functionCode() == 0x03)
+        if(modbus->functionCode() == QModbusPdu::ReadHoldingRegisters)
         {
             itemText = "Read Holding Register (0x03) ";
             table->setItem(rowCount-1, 3, new QTableWidgetItem(itemText));
 
-            const QModbusDataUnit unit = reply->result();
+            itemText =  tr("Return Data Length(Half Word): %1, Data:")
+                .arg(QString().number(modbus->readRegister->valueCount()));
 
-            if(unit.isValid())
+            for( i = 0; i < modbus->readRegister->valueCount(); i++)
             {
-                for( i = 0; i < unit.valueCount() + 1; i++)
-                {
-                    if( i == 0)
-                    {
-                        itemText =  tr("Return Data Length(Half Word): %1, Data:")
-                           .arg(QString().number(unit.valueCount()));
-                    }
-                    else
-                    {
-                        itemText.append(tr(" 0x%1").arg(QString().number(unit.value(i-1), 16).toUpper()));
-                    }
-                }
-            }
-            else
-            {
-                itemText = "Data is Invalid";
+                itemText.append(tr(" 0x%1")
+                                .arg(QString()
+                                     .number(modbus->readRegister->value(i), 16).toUpper()));
             }
 
             table->setItem(rowCount-1, 4, new QTableWidgetItem(itemText));
         }
-        else if(serialSendDialog->functionCode() == 0x06)
+        else if(modbus->functionCode() == QModbusPdu::WriteSingleRegister)
         {
             itemText = "Write Single Register (0x06) ";
             table->setItem(rowCount-1, 3, new QTableWidgetItem(itemText));
 
-            if( reply->rawResult().isValid())
-            {
-                    res = reply->rawResult().data()[0];
-                    res <<= 8;
-                    res |= (0x00FF & reply->rawResult().data()[1]);
-                    itemText =  tr("Register Address: 0x%1, Write Data:")
-                                .arg(QString().number(res, 16).toUpper());
+            itemText =  tr("Register Address: 0x%1, Write Data:")
+                                .arg(QString().number(modbus->writeRegister->startAddress(), 16).toUpper());
 
-                    res = reply->rawResult().data()[2];
-                    res <<= 8;
-                    res |= (0x00FF & reply->rawResult().data()[3]);
-                    itemText.append(tr(" 0x%1").arg(QString().number(res, 16).toUpper()));
-            }
-            else
-            {
-                itemText = "Data is Invalid";
-            }
+            itemText.append(tr(" 0x%1").arg(QString()
+                                            .number(modbus->writeRegister->value(), 16).toUpper()));
 
             table->setItem(rowCount-1, 4, new QTableWidgetItem(itemText));
         }
     }
     else
     {
-        itemText = reply->errorString();
+        itemText = modbus->replyErrorString();
         QTableWidgetItem* newItem = new QTableWidgetItem(itemText);
         newItem->setTextColor(Qt::red);
 
         table->setItem(rowCount-1, 4, newItem);
-        ui->statusBar->showMessage(tr("Finished, %1").arg(reply->errorString()));
+        ui->statusBar->showMessage(tr("Finished, %1").arg(modbus->replyErrorString()));
     }
 
     reply->deleteLater();
 }
+
 void MainWindow::updateTable(QTableWidget* table, QString from)
 {
     int rowCount;
@@ -273,4 +267,9 @@ void MainWindow::updateTable(QTableWidget* table, QString from)
 
         table->setItem(rowCount-1, 4, new QTableWidgetItem(itemText));
     }
+}
+
+void MainWindow::updateCaption(void)
+{
+
 }
