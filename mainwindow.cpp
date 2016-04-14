@@ -159,8 +159,6 @@ void MainWindow::modbusSendFinishedHandle(void)
 
     QTableWidget* table = ui->tableWidget;
 
-    QModbusReply* reply = qobject_cast<QModbusReply*>(sender());
-
     rowCount = table->rowCount();
 
     rowCount++;
@@ -222,8 +220,6 @@ void MainWindow::modbusSendFinishedHandle(void)
         table->setItem(rowCount-1, 4, newItem);
         ui->statusBar->showMessage(tr("Finished, %1").arg(modbus->replyErrorString()));
     }
-
-    reply->deleteLater();
 }
 
 void MainWindow::updateTable(QTableWidget* table, QString from)
