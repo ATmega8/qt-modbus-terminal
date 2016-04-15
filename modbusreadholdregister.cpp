@@ -16,6 +16,8 @@ void ModbusReadHoldRegister::processReadHoldRegisterReply(QModbusReply* reply)
 
 quint16 ModbusReadHoldRegister::value(int index)
 {
+    Q_ASSERT(!data.isEmpty());
+
     return data[index];
 }
 

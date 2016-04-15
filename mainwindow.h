@@ -11,6 +11,7 @@
 #include "serialsettingdialog.h"
 #include "serialsenddialog.h"
 #include "modbus.h"
+#include "plot.h"
 
 #include "qwt_plot_curve.h"
 #include "qwt_plot_marker.h"
@@ -27,9 +28,6 @@ public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
 
-public slots:
-    void modbusStateChangeHandle(QModbusDevice::State state);
-
 private slots:
     void on_actionOpen_triggered();
     void on_actionClose_triggered();
@@ -44,19 +42,14 @@ private:
     SerialSettingDialog* serialDialog;
     SerialSendDialog* serialSendDialog;
     Modbus* modbus;
+    Plot* ploter;
+
+    double plotCount;
 
     QMessageBox* msgBox;
 
     QTime timesample;
     QTimer *plotTimer;
-
-    QwtPlotCurve* d_curve1;
-    QwtPlotMarker* d_marker1;
-
-    double plotCount;
-
-    QVector<double> x_data;
-    QVector<double> y_data;
 
     void updateTable(QTableWidget* table, QString from);
 };

@@ -1,9 +1,6 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
-#include <qwt_plot.h>
-#include <qwt_plot_grid.h>
-
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
@@ -17,57 +14,19 @@ MainWindow::MainWindow(QWidget *parent) :
     serialDialog = new SerialSettingDialog();
     serialSendDialog = new SerialSendDialog();
 
+    ploter = new Plot(ui->qwtPlot);
+
+    plotCount = 0.0;
+
     msgBox = new QMessageBox();
+
+    ploter->setupPloter();
 
     plotTimer = new QTimer(this);
     connect(plotTimer, SIGNAL(timeout()), this, SLOT(updateCaption()));
     plotTimer->start(1000);
 
-    plotCount  = 0.0;
-
-    //Qwt Plot Widget Init
-    //Axis
-    ui->qwtPlot->setAxisMaxMajor(QwtPlot::xBottom, 5);
-    ui->qwtPlot->setAxisMaxMinor(QwtPlot::xBottom, 9);
-    ui->qwtPlot->setAxisMaxMajor(QwtPlot::yRight, 5);
-    ui->qwtPlot->setAxisMaxMinor(QwtPlot::yRight, 9);
-
-    ui->qwtPlot->setAxisTitle(QwtPlot::xBottom, "Time");
-    ui->qwtPlot->setAxisTitle(QwtPlot::yLeft, "Attitude");
-
-    //Grid
-    QwtPlotGrid* plotGrid = new QwtPlotGrid;
-
-    plotGrid->enableXMin(true);
-    plotGrid->setMajorPen(Qt::black, 0, Qt::DotLine);
-    plotGrid->setMinorPen(Qt::gray, 0, Qt::DotLine);
-    plotGrid->attach(ui->qwtPlot);
-
-    //Curve
-    d_curve1 = new QwtPlotCurve( "Attitude" );
-    d_curve1->setRenderHint( QwtPlotItem::RenderAntialiased );
-    d_curve1->setPen( Qt::red);
-    d_curve1->setLegendAttribute( QwtPlotCurve::LegendShowLine );
-    d_curve1->setYAxis( QwtPlot::yLeft );
-    d_curve1->attach(ui->qwtPlot);
-
-    //Marker
-    d_marker1 = new QwtPlotMarker();
-    d_marker1->setValue( 0.0, 0.0 );
-    d_marker1->setLineStyle( QwtPlotMarker::VLine );
-    d_marker1->setLabelAlignment( Qt::AlignRight | Qt::AlignBottom );
-    d_marker1->setLinePen( Qt::green, 0, Qt::DashDotLine );
-    d_marker1->attach(ui->qwtPlot);
-
-    //background
-    ui->qwtPlot->setCanvasBackground(QColor("white"));
-
-    ui->qwtPlot->setAutoReplot(true);
-
     timesample.start();
-
-    connect(modbus, SIGNAL(stateChanged(QModbusDevice::State)),
-            this, SLOT(modbusStateChangeHandle(QModbusDevice::State)));
 
     connect(modbus,SIGNAL(finished()),
             this, SLOT(modbusSendFinishedHandle()));
@@ -130,27 +89,6 @@ void MainWindow::on_actionSend_triggered()
     }
 }
 
-void MainWindow::modbusStateChangeHandle(QModbusDevice::State state)
-{
-    switch(state)
-    {
-        case QModbusDevice::UnconnectedState:
-            ui->statusBar->showMessage("Unconnected");
-        break;
-
-        case QModbusDevice::ConnectingState:
-            ui->statusBar->showMessage("Connecting");
-            break;
-
-         case QModbusDevice::ConnectedState:
-            ui->statusBar->showMessage("Connected");
-            break;
-
-        default:
-            break;
-    }
-}
-
 void MainWindow::modbusSendFinishedHandle(void)
 {
     int rowCount;
@@ -195,6 +133,9 @@ void MainWindow::modbusSendFinishedHandle(void)
                                      .number(modbus->readRegister->value(i), 16).toUpper()));
             }
 
+            //更新绘图
+            ploter->plotPoint(((qint16)modbus->readRegister->value(0)/8192.0), plotCount++);
+            //更新表格
             table->setItem(rowCount-1, 4, new QTableWidgetItem(itemText));
         }
         else if(modbus->functionCode() == QModbusPdu::WriteSingleRegister)
@@ -267,5 +208,9 @@ void MainWindow::updateTable(QTableWidget* table, QString from)
 
 void MainWindow::updateCaption(void)
 {
-
+    if(modbus->state() == QModbusDevice::ConnectedState)
+    {
+        //请求数据
+        modbus->sendRequest(serialSendDialog);
+    }
 }
