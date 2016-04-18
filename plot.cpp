@@ -6,8 +6,12 @@ Plot::Plot(QwtPlot *uiplot)
     ploter = uiplot;
 }
 
-void Plot::setupPloter(void)
+void Plot::setupPloter(int curveCount)
 {
+    int i;
+
+    m_plotCurveCount = curveCount;
+
     //Qwt Plot Widget Init
     //Axis
     ploter->setAxisMaxMajor(QwtPlot::xBottom, 5);
@@ -26,25 +30,75 @@ void Plot::setupPloter(void)
     plotGrid->setMinorPen(Qt::gray, 0, Qt::DotLine);
     plotGrid->attach(ploter);
 
+    curveList.clear();
+
     //Curve
-    d_curve1 = new QwtPlotCurve( "Attitude" );
-    d_curve1->setRenderHint( QwtPlotItem::RenderAntialiased );
-    d_curve1->setPen( Qt::red);
-    d_curve1->setLegendAttribute( QwtPlotCurve::LegendShowLine );
-    d_curve1->setYAxis( QwtPlot::yLeft );
-    d_curve1->attach(ploter);
+    for(i = 0; i < curveCount; i++)
+    {
+        curveList.append(new QwtPlotCurve( "Attitude" ));
+        curveList[i]->setRenderHint( QwtPlotItem::RenderAntialiased );
+
+        if( i == 0)
+        {
+            curveList[i]->setPen(Qt::red);
+        }
+        else if(i == 1)
+        {
+            curveList[i]->setPen(Qt::black);
+        }
+        else
+        {
+            curveList[i]->setPen(Qt::blue);
+        }
+
+        curveList[i]->setLegendAttribute( QwtPlotCurve::LegendShowLine );
+        curveList[i]->setYAxis( QwtPlot::yLeft );
+        curveList[i]->attach(ploter);
+
+        y_data.append(new QVector<double>);
+        x_data.append(new QVector<double>);
+    }
 
     //background
     ploter->setCanvasBackground(QColor("white"));
 
     ploter->setAutoReplot(true);
+
 }
 
-void Plot::plotPoint(double y, double x)
+void Plot::plotPoint(double y, double x, int i)
 {
-    y_data.append(y);
-    x_data.append(x);
+    y_data[i]->append(y);
+    x_data[i]->append(x);
 
-    Q_ASSERT(x_data.length() == y_data.length());
-    d_curve1->setSamples(x_data, y_data);
+    Q_ASSERT(x_data[i]->length() == y_data[i]->length());
+
+    curveList[i]->setSamples(*x_data[i], *y_data[i]);
+}
+
+QVector<double> Plot::plotDataValue(int index)
+{
+    int i;
+    double* dataItem;
+
+    QVector<double> data = QVector<double>();
+
+    for(i = 0; i < m_plotCurveCount; i++)
+    {
+        dataItem = y_data[i]->data();
+        data.append(*(dataItem + index));
+
+    }
+    return data;
+}
+
+int Plot::plotDataCount(void)
+{
+    int i;
+    for(i = 0; i < m_plotCurveCount; i++)
+    {
+        Q_ASSERT(x_data[i]->length() == y_data[i]->length());
+    }
+
+    return y_data[0]->length();
 }

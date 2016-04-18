@@ -13,6 +13,7 @@ MainWindow::MainWindow(QWidget *parent) :
     modbus = new Modbus();
     serialDialog = new SerialSettingDialog();
     serialSendDialog = new SerialSendDialog();
+    plotSettingDialog = new PlotSettingDialog();
 
     ploter = new Plot(ui->qwtPlot);
 
@@ -20,11 +21,9 @@ MainWindow::MainWindow(QWidget *parent) :
 
     msgBox = new QMessageBox();
 
-    ploter->setupPloter();
-
     plotTimer = new QTimer(this);
     connect(plotTimer, SIGNAL(timeout()), this, SLOT(updateCaption()));
-    plotTimer->start(1000);
+    plotTimer->start(100);
 
     timesample.start();
 
@@ -134,7 +133,10 @@ void MainWindow::modbusSendFinishedHandle(void)
             }
 
             //更新绘图
-            ploter->plotPoint(((qint16)modbus->readRegister->value(0)/8192.0), plotCount++);
+            ploter->plotPoint(((qint16)modbus->readRegister->value(4)), plotCount, 0);
+            ploter->plotPoint(((qint16)modbus->readRegister->value(5)), plotCount, 1);
+            ploter->plotPoint(((qint16)modbus->readRegister->value(6)), plotCount++, 2);
+
             //更新表格
             table->setItem(rowCount-1, 4, new QTableWidgetItem(itemText));
         }
@@ -213,4 +215,51 @@ void MainWindow::updateCaption(void)
         //请求数据
         modbus->sendRequest(serialSendDialog);
     }
+}
+
+void MainWindow::on_actionPlot_Setting_triggered()
+{
+    if(plotSettingDialog->exec() == 1)
+    {
+        ploter->setupPloter(plotSettingDialog->plotCurveCount());
+    }
+}
+
+void MainWindow::on_actionExport_triggered()
+{
+    QString receiveFileName;
+    QString lineData;
+    int i, j;
+
+    QVector<double> data;
+
+    /*打开文件*/
+    receiveFileName = QFileDialog::getSaveFileName(this,
+        tr("Open Receive File"), "/home/life", tr("Any files(*)"));
+
+
+    receiveFile.setFileName(receiveFileName);
+
+    if(!receiveFile.open(QIODevice::ReadWrite))
+        ui->statusBar->showMessage(tr("Open file fault"));
+    else
+        ui->statusBar->showMessage(tr("Open file ok"));
+
+    for(i = 0; i < ploter->plotDataCount(); i++)
+    {
+        lineData.clear();
+
+        QVector<double> data = ploter->plotDataValue(i);
+
+        for(j = 0; j <data.length(); j++)
+        {
+            lineData += QString("%1,").arg(data[j]);
+        }
+
+        lineData += QString("\n");
+
+        receiveFile.write(lineData.toStdString().data());
+    }
+
+    receiveFile.close();
 }

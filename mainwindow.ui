@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>679</width>
-    <height>343</height>
+    <height>389</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -94,7 +94,7 @@
         <item row="0" column="0" colspan="2">
          <widget class="QwtPlot" name="qwtPlot">
           <property name="sizePolicy">
-           <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+           <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
             <horstretch>0</horstretch>
             <verstretch>0</verstretch>
            </sizepolicy>
@@ -134,6 +134,8 @@
    <addaction name="actionClose"/>
    <addaction name="actionSend"/>
    <addaction name="actionSetting"/>
+   <addaction name="actionPlot_Setting"/>
+   <addaction name="actionExport"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
   <action name="actionOpen">
@@ -191,6 +193,23 @@
    </property>
    <property name="toolTip">
     <string>serial setting</string>
+   </property>
+  </action>
+  <action name="actionPlot_Setting">
+   <property name="icon">
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/gnome-settings-theme.png</normaloff>:/resource/gnome-settings-theme.png</iconset>
+   </property>
+   <property name="text">
+    <string>Plot Setting</string>
+   </property>
+   <property name="toolTip">
+    <string>plot setting</string>
+   </property>
+  </action>
+  <action name="actionExport">
+   <property name="text">
+    <string>Export</string>
    </property>
   </action>
  </widget>

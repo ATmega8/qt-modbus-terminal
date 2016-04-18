@@ -7,9 +7,12 @@
 #include <QMessageBox>
 #include <QThread>
 #include <QVector>
+#include <QFile>
+#include <QFileDialog>
 
 #include "serialsettingdialog.h"
 #include "serialsenddialog.h"
+#include "plotsettingdialog.h"
 #include "modbus.h"
 #include "plot.h"
 
@@ -36,11 +39,16 @@ private slots:
     void updateCaption(void);
     void modbusSendFinishedHandle(void);
 
+    void on_actionPlot_Setting_triggered();
+
+    void on_actionExport_triggered();
+
 private:
 
     Ui::MainWindow *ui;
     SerialSettingDialog* serialDialog;
     SerialSendDialog* serialSendDialog;
+    PlotSettingDialog* plotSettingDialog;
     Modbus* modbus;
     Plot* ploter;
 
@@ -51,7 +59,10 @@ private:
     QTime timesample;
     QTimer *plotTimer;
 
+    QFile receiveFile;
+
     void updateTable(QTableWidget* table, QString from);
 };
+
 
 #endif // MAINWINDOW_H

@@ -13,15 +13,19 @@ class Plot : QObject
 
 public:
     Plot(QwtPlot* uiplot);
-    void setupPloter(void);
-    void plotPoint(double y, double x);
+    void setupPloter(int curveCount);
+    void plotPoint(double y, double x, int i);
+    QVector<double> plotDataValue(int index);
+    int plotDataCount(void);
 
 private:
     QwtPlot* ploter;
-    QwtPlotCurve* d_curve1;
+    QVector<QwtPlotCurve*> curveList;
 
-    QVector<double> x_data;
-    QVector<double> y_data;
+    QVector<QVector<double>*> x_data;
+    QVector<QVector<double>*> y_data;
+
+    int m_plotCurveCount;
 };
 
 #endif // PLOT_H

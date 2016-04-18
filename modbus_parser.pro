@@ -16,8 +16,10 @@ HEADERS += mainwindow.h \
            modbuswritesingleregister.h \
            serialsenddialog.h \
            serialsettingdialog.h \
-    plot.h
-FORMS += mainwindow.ui serialsenddialog.ui serialsettingdialog.ui
+    plot.h \
+    plotsettingdialog.h
+FORMS += mainwindow.ui serialsenddialog.ui serialsettingdialog.ui \
+    plotsettingdialog.ui
 SOURCES += main.cpp \
            mainwindow.cpp \
            modbus.cpp \
@@ -25,7 +27,8 @@ SOURCES += main.cpp \
            modbuswritesingleregister.cpp \
            serialsenddialog.cpp \
            serialsettingdialog.cpp \
-    plot.cpp
+    plot.cpp \
+    plotsettingdialog.cpp
 RESOURCES += resource.qrc
 
 DISTFILES += \
