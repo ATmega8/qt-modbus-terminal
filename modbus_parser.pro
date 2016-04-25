@@ -17,7 +17,9 @@ HEADERS += mainwindow.h \
            serialsenddialog.h \
            serialsettingdialog.h \
     plot.h \
-    plotsettingdialog.h
+    plotsettingdialog.h \
+    ekf_data.h \
+    ekf.h
 FORMS += mainwindow.ui serialsenddialog.ui serialsettingdialog.ui \
     plotsettingdialog.ui
 SOURCES += main.cpp \
@@ -28,8 +30,12 @@ SOURCES += main.cpp \
            serialsenddialog.cpp \
            serialsettingdialog.cpp \
     plot.cpp \
-    plotsettingdialog.cpp
+    plotsettingdialog.cpp \
+    ekf_data.cpp \
+    ekf.cpp
 RESOURCES += resource.qrc
 
 DISTFILES += \
     README.md
+
+unix:!macx: LIBS += -lgsl -lm -lgslcblas

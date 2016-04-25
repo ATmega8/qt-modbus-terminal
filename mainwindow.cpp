@@ -23,7 +23,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     plotTimer = new QTimer(this);
     connect(plotTimer, SIGNAL(timeout()), this, SLOT(updateCaption()));
-    plotTimer->start(100);
+    plotTimer->start(20);
 
     timesample.start();
 
@@ -135,7 +135,10 @@ void MainWindow::modbusSendFinishedHandle(void)
             //更新绘图
             ploter->plotPoint(((qint16)modbus->readRegister->value(4)), plotCount, 0);
             ploter->plotPoint(((qint16)modbus->readRegister->value(5)), plotCount, 1);
-            ploter->plotPoint(((qint16)modbus->readRegister->value(6)), plotCount++, 2);
+            ploter->plotPoint(((qint16)modbus->readRegister->value(6)), plotCount, 2);
+            ploter->plotPoint(((qint16)modbus->readRegister->value(0)), plotCount, 3);
+            ploter->plotPoint(((qint16)modbus->readRegister->value(1)), plotCount, 4);
+            ploter->plotPoint(((qint16)modbus->readRegister->value(2)), plotCount++, 5);
 
             //更新表格
             table->setItem(rowCount-1, 4, new QTableWidgetItem(itemText));
@@ -237,13 +240,17 @@ void MainWindow::on_actionExport_triggered()
     receiveFileName = QFileDialog::getSaveFileName(this,
         tr("Open Receive File"), "/home/life", tr("Any files(*)"));
 
-
     receiveFile.setFileName(receiveFileName);
 
     if(!receiveFile.open(QIODevice::ReadWrite))
+    {
         ui->statusBar->showMessage(tr("Open file fault"));
+        return;
+    }
     else
+    {
         ui->statusBar->showMessage(tr("Open file ok"));
+    }
 
     for(i = 0; i < ploter->plotDataCount(); i++)
     {
@@ -253,7 +260,14 @@ void MainWindow::on_actionExport_triggered()
 
         for(j = 0; j <data.length(); j++)
         {
-            lineData += QString("%1,").arg(data[j]);
+            if( j < (data.length() - 1))
+            {
+                lineData += QString("%1,").arg(data[j]);
+            }
+            else
+            {
+                lineData += QString("%1").arg(data[j]);
+            }
         }
 
         lineData += QString("\n");
