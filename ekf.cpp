@@ -268,22 +268,6 @@ void EKF::update(vector<double> z_in)
 			        1.0, K, z,
 				    1.0, X);
 
-
-	/*四元数正交化*/
-	gsl_vector* norm_q = gsl_vector_alloc(4);
-
-	for(i = 0; i < norm_q->size; i++)
-		gsl_vector_set(norm_q, i, gsl_vector_get(X, i));
-
-	double norm_value = gsl_blas_dnrm2(norm_q);
-
-	for(i = 0; i < norm_q->size; i++)
-	{
-		gsl_vector_set(X, i, gsl_vector_get(norm_q, i)/norm_value);
-	}
-
-	gsl_vector_free(norm_q);
-
 	/*计算后验协方差*/
 	/*P = (I-K*H)*P*/
 	gsl_matrix* I = gsl_matrix_alloc(A->size1, A->size2);
@@ -403,8 +387,8 @@ vector<double> EKF::eulerAngles(void)
 
 	angles.resize(2);
 
-	angles[0] = atan2(q0*q0-q1*q1-q2*q2+q3*q3, 2*(q1*q3-q0*q2));
-	angles[1] = asin(-2*(q2*q3-q0*q1));
+    angles[0] = atan2(2*(q2*q3+q0*q1), q0*q0-q1*q1-q2*q2+q3*q3);
+    angles[1] = asin(-2*(q1*q3-q0*q2));
 
 	return angles;
 }
@@ -420,4 +404,24 @@ void EKF::printfMatrix(const gsl_matrix* m)
 
 		printf("\n");
 	}
+}
+
+void EKF::norm(void)
+{
+    unsigned int i;
+
+    /*四元数正交化*/
+    gsl_vector* norm_q = gsl_vector_alloc(4);
+
+    for(i = 0; i < norm_q->size; i++)
+        gsl_vector_set(norm_q, i, gsl_vector_get(X, i));
+
+    double norm_value = gsl_blas_dnrm2(norm_q);
+
+    for(i = 0; i < norm_q->size; i++)
+    {
+        gsl_vector_set(X, i, gsl_vector_get(norm_q, i)/norm_value);
+    }
+
+    gsl_vector_free(norm_q);
 }

@@ -14,10 +14,7 @@ public:
 	void expm(gsl_matrix* m, unsigned int n);
 	void vector2matrix(vector<double> v, gsl_matrix* m);
 	vector<double> eulerAngles(void);
-
-	gsl_vector* X;
-	gsl_matrix* H;
-	gsl_matrix* P;
+    void norm(void);
 
 private:
 	void matrix2vector(vector<double> v, gsl_matrix* m);
@@ -25,6 +22,9 @@ private:
 
 	EKFData* m_ekfData;	
 
+    gsl_vector* X;
+    gsl_matrix* H;
+    gsl_matrix* P;
 	gsl_matrix* K;
 	gsl_matrix* A;
 	gsl_matrix* R;

@@ -25,6 +25,36 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(plotTimer, SIGNAL(timeout()), this, SLOT(updateCaption()));
     plotTimer->start(20);
 
+    ekfData = new EKFData(10, 6);
+
+    double q0 =  0.994801525517403;
+    double q1 = -0.07361191424670879;
+    double q2 = -0.07017298779253538;
+    double q3 =  0.005192561357535927;
+
+    vector<double> X = {q0, q1, q2, q3, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+
+    vector<double> H = {-2.0,  2.0, -2.0,  2.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                         2.0,  2.0,  2.0,  2.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                         2.0, -2.0, -2.0,  2.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                         0.0,  0.0,  0.0,  0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                         0.0,  0.0,  0.0,  0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0,
+                         0.0,  0.0,  0.0,  0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0};
+
+    vector<double> Q = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+
+    vector<double> R = {10, 10, 10, 1, 1, 1};
+
+    ekfData->setInitialStateVariable(X);
+    ekfData->setObservationMatrix(H);
+    ekfData->setProcessNoiseValue(Q);
+    ekfData->setObservationNoiseValue(R);
+    ekfData->setInitialCovarianceValue(10);
+
+    ekf     = new EKF(ekfData, 6);
+
+    m_z.resize(6);
+
     timesample.start();
 
     connect(modbus,SIGNAL(finished()),
@@ -132,13 +162,20 @@ void MainWindow::modbusSendFinishedHandle(void)
                                      .number(modbus->readRegister->value(i), 16).toUpper()));
             }
 
+            m_z[1] = (double)((qint16)modbus->readRegister->value(0))/(32768/2);
+            m_z[0] = (double)((qint16)modbus->readRegister->value(1))/(32768/2);
+            m_z[2] = (double)((qint16)modbus->readRegister->value(2))/(32768/2);
+            m_z[4] = (double)((qint16)modbus->readRegister->value(4))/(32768/500);
+            m_z[3] = (double)((qint16)modbus->readRegister->value(5))/(32768/500);
+            m_z[5] = (double)((qint16)modbus->readRegister->value(6))/(32768/500);
+
             //更新绘图
-            ploter->plotPoint(((qint16)modbus->readRegister->value(4)), plotCount, 0);
-            ploter->plotPoint(((qint16)modbus->readRegister->value(5)), plotCount, 1);
-            ploter->plotPoint(((qint16)modbus->readRegister->value(6)), plotCount, 2);
-            ploter->plotPoint(((qint16)modbus->readRegister->value(0)), plotCount, 3);
-            ploter->plotPoint(((qint16)modbus->readRegister->value(1)), plotCount, 4);
-            ploter->plotPoint(((qint16)modbus->readRegister->value(2)), plotCount++, 5);
+            ekf->update(m_z);
+            m_q = ekf->eulerAngles();
+            ekf->norm();
+
+           ploter->plotPoint(m_q[0], plotCount, 0);
+           ploter->plotPoint(m_q[1], plotCount++, 1);
 
             //更新表格
             table->setItem(rowCount-1, 4, new QTableWidgetItem(itemText));

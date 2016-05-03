@@ -15,6 +15,7 @@
 #include "plotsettingdialog.h"
 #include "modbus.h"
 #include "plot.h"
+#include "ekf.h"
 
 #include "qwt_plot_curve.h"
 #include "qwt_plot_marker.h"
@@ -60,6 +61,12 @@ private:
     QTimer *plotTimer;
 
     QFile receiveFile;
+
+    EKFData* ekfData;
+    EKF*     ekf;
+
+    vector<double> m_z;
+    vector<double> m_q;
 
     void updateTable(QTableWidget* table, QString from);
 };
